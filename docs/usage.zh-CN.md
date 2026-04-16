@@ -60,6 +60,18 @@ reset_on_idle_mins = 60
 
 开启后，如果用户长时间未发消息，下一条普通消息会自动进入一个新的会话；旧会话仍会保留在 `/list` 中，不会被删除。
 
+### 切换模型时保留历史
+
+默认情况下，`/model` 切换模型会清除对话历史，开启全新会话。如果希望切换模型时保留当前会话上下文：
+
+```toml
+[[projects]]
+name = "demo"
+model_switch_keep_history = true
+```
+
+开启后，切换模型时会使用 `--resume <session-id> --model <new-model>` 启动新进程，agent 会在新模型下继续当前会话——由 Claude Code CLI 原生管理上下文，不会额外消耗 token。注意模型切换作用于共享的 agent 实例——如果多个平台使用同一个 project，模型变更会影响所有平台。
+
 ---
 
 ## 权限模式

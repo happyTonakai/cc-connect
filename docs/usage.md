@@ -58,6 +58,18 @@ reset_on_idle_mins = 60
 
 When enabled, the next normal message after a long idle period starts in a fresh session automatically, without deleting the old session from `/list`.
 
+### Preserving history on model switch
+
+By default, `/model` starts a completely new session (clearing conversation history). To resume the current session with a new model:
+
+```toml
+[[projects]]
+name = "demo"
+model_switch_keep_history = true
+```
+
+When enabled, the model switch uses `--resume <session-id> --model <new-model>` under the hood, so the agent continues the existing conversation natively with the new model — no extra token cost for replaying history. Note that model switching affects the shared agent instance — if multiple platforms use the same project, the model change applies to all of them.
+
 ---
 
 ## Permission Modes
