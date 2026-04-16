@@ -105,6 +105,15 @@ level = "info" # debug, info, warn, error
 # [[projects]]
 # reset_on_idle_mins = 60   # 0 or unset = disabled / 设为 0 或留空表示禁用
 
+# Keep conversation history when switching models via /model.
+# When enabled, the agent resumes the current session with the new model (--resume + --model),
+# so context is preserved natively with no extra token cost.
+# When disabled (default), model switch starts a completely fresh session.
+# 通过 /model 切换模型时保留对话历史。
+# 开启后，agent 会在新模型下继续当前会话（--resume + --model），由 CLI 原生管理上下文，不额外消耗 token。
+# 关闭时（默认），切换模型会开启全新的会话。
+# model_switch_keep_history = true
+
 # =============================================================================
 # OS-user isolation via run_as_user (Linux/macOS only)
 # 通过 run_as_user 实现 OS 用户隔离（仅限 Linux/macOS）
