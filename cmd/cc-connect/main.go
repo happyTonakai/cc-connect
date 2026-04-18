@@ -465,6 +465,9 @@ func main() {
 		if proj.ResetOnIdleMins != nil {
 			engine.SetResetOnIdle(time.Duration(*proj.ResetOnIdleMins) * time.Minute)
 		}
+		if proj.Agent.ModelSwitchKeepHistory != nil {
+			engine.SetModelSwitchKeepHistory(*proj.Agent.ModelSwitchKeepHistory)
+		}
 
 		// Wire sender injection
 		if proj.InjectSender != nil {

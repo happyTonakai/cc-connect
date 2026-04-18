@@ -212,6 +212,7 @@ type Engine struct {
 	autoCompressMaxTokens int
 	autoCompressMinGap    time.Duration
 	resetOnIdle           time.Duration
+	modelSwitchKeepHistory bool
 
 	// When true, append [ctx: ~N%] (or model self-report) to assistant replies shown on platforms.
 	showContextIndicator bool
@@ -528,6 +529,11 @@ func (e *Engine) SetResetOnIdle(d time.Duration) {
 		return
 	}
 	e.resetOnIdle = d
+}
+
+// SetModelSwitchKeepHistory controls whether /model preserves conversation history.
+func (e *Engine) SetModelSwitchKeepHistory(keep bool) {
+	e.modelSwitchKeepHistory = keep
 }
 
 // SetShowContextIndicator controls whether assistant replies include the [ctx: ~N%] suffix.
@@ -5945,8 +5951,14 @@ func (e *Engine) cmdModel(p Platform, msg *Message, args []string) {
 	e.cleanupInteractiveState(interactiveKey)
 
 	s := sessions.GetOrCreateActive(msg.SessionKey)
-	s.SetAgentSessionID("", "")
-	s.ClearHistory()
+	if e.modelSwitchKeepHistory {
+		// Keep the existing agent session ID so the next StartSession uses
+		// --resume <id> --model <new>, which lets Claude CLI restore context
+		// natively without replaying history (no extra token cost).
+	} else {
+		s.SetAgentSessionID("", "")
+		s.ClearHistory()
+	}
 	sessions.Save()
 
 	e.reply(p, msg.ReplyCtx, e.i18n.Tf(MsgModelChanged, target))
@@ -7682,8 +7694,10 @@ func (e *Engine) handleModelCardAction(args, sessionKey string) *Card {
 	e.cleanupInteractiveState(e.interactiveKeyForSessionKey(sessionKey))
 	if err == nil {
 		s := sessions.GetOrCreateActive(sessionKey)
-		s.SetAgentSessionID("", "")
-		s.ClearHistory()
+		if !e.modelSwitchKeepHistory {
+			s.SetAgentSessionID("", "")
+			s.ClearHistory()
+		}
 		sessions.Save()
 	}
 
@@ -8232,8 +8246,10 @@ func (e *Engine) performModelSwitchAsync(sessionKey string, state *interactiveSt
 	resolved, err := e.switchModelOnAgent(agent, target, agent == e.agent)
 	if err == nil {
 		s := sessions.GetOrCreateActive(sessionKey)
-		s.SetAgentSessionID("", "")
-		s.ClearHistory()
+		if !e.modelSwitchKeepHistory {
+			s.SetAgentSessionID("", "")
+			s.ClearHistory()
+		}
 		sessions.Save()
 	}
 
