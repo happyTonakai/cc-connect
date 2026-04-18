@@ -7773,7 +7773,8 @@ func TestCmdShell_MultiWorkspaceIgnoresMissingSharedBinding(t *testing.T) {
 	for {
 		sent := p.getSent()
 		if len(sent) > 0 {
-			output := sent[0]
+			// With streaming progress, the final result is the last sent message
+			output := sent[len(sent)-1]
 			if !strings.Contains(output, agent.workDir) && !strings.Contains(output, expectedResolved) {
 				t.Fatalf("expected shell output to fall back to agent work dir %q (resolved %q), got %q", agent.workDir, expectedResolved, output)
 			}
