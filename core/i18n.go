@@ -196,6 +196,8 @@ const (
 	MsgProviderAddOther          MsgKey = "provider_add_other"
 	MsgProviderAddApiKeyPrompt   MsgKey = "provider_add_api_key_prompt"
 	MsgProviderAddInviteHint     MsgKey = "provider_add_invite_hint"
+	MsgProviderLinkGlobal        MsgKey = "provider_link_global"
+	MsgProviderLinked            MsgKey = "provider_linked"
 
 	MsgVoiceNotEnabled               MsgKey = "voice_not_enabled"
 	MsgVoiceUsingPlatformRecognition MsgKey = "voice_using_platform_recognition"
@@ -297,6 +299,7 @@ const (
 	MsgModelSelectPlaceholder    MsgKey = "model_select_placeholder"
 	MsgModeSelectPlaceholder     MsgKey = "mode_select_placeholder"
 	MsgProviderSelectPlaceholder MsgKey = "provider_select_placeholder"
+	MsgProviderClearOption       MsgKey = "provider_clear_option"
 	MsgCardBack                  MsgKey = "card_back"
 	MsgCardPrev                  MsgKey = "card_prev"
 	MsgCardNext                  MsgKey = "card_next"
@@ -1468,6 +1471,17 @@ var messages = map[MsgKey]map[Language]string{
 		LangJapanese:           "🔑 キーをお持ちでない場合はこちらから登録: %s",
 		LangSpanish:            "🔑 ¿No tienes una clave? Regístrate aquí: %s",
 	},
+	MsgProviderLinkGlobal: {
+		LangEnglish: "Link existing provider", LangChinese: "关联已有服务商", LangTraditionalChinese: "關聯已有服務商",
+		LangJapanese: "既存プロバイダーをリンク", LangSpanish: "Vincular proveedor existente",
+	},
+	MsgProviderLinked: {
+		LangEnglish:            "✅ Provider **%s** linked to this project.",
+		LangChinese:            "✅ 已关联服务商 **%s** 到当前项目。",
+		LangTraditionalChinese: "✅ 已關聯服務商 **%s** 到目前專案。",
+		LangJapanese:           "✅ プロバイダー **%s** をこのプロジェクトにリンクしました。",
+		LangSpanish:            "✅ Proveedor **%s** vinculado a este proyecto.",
+	},
 	MsgVoiceNotEnabled: {
 		LangEnglish:            "🎙 Voice messages are not enabled. Please configure `[speech]` in config.toml.",
 		LangChinese:            "🎙 语音消息未启用，请在 config.toml 中配置 `[speech]` 部分。",
@@ -2179,6 +2193,10 @@ var messages = map[MsgKey]map[Language]string{
 	MsgProviderSelectPlaceholder: {
 		LangEnglish: "Select provider", LangChinese: "选择 Provider", LangTraditionalChinese: "選擇 Provider",
 		LangJapanese: "プロバイダーを選択", LangSpanish: "Seleccionar proveedor",
+	},
+	MsgProviderClearOption: {
+		LangEnglish: "Do not use provider", LangChinese: "不使用服务商", LangTraditionalChinese: "不使用服務商",
+		LangJapanese: "プロバイダーを使用しない", LangSpanish: "No usar proveedor",
 	},
 	MsgCardBack: {
 		LangEnglish: "← Back", LangChinese: "← 返回", LangTraditionalChinese: "← 返回",
