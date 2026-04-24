@@ -1213,7 +1213,7 @@ func (e *Engine) executeCronShell(p Platform, replyCtx any, job *CronJob) error 
 	go readPipe(stderr)
 
 	go func() {
-		shellCmd.Wait()
+		_ = shellCmd.Wait()
 		close(doneCh)
 	}()
 
@@ -1323,7 +1323,6 @@ func (e *Engine) finishCronShell(p Platform, replyCtx any, cmd *exec.Cmd, mu *sy
 		finalMsg = fmt.Sprintf("⏰ ✅ `%s`\n\n%s", cmdLabel, truncateStr(result, 3000))
 	} else {
 		errMsg := output
-		finalMsg = fmt.Sprintf("⏰ ❌ `%s`", cmdLabel)
 		if errMsg != "" {
 			finalMsg = fmt.Sprintf("⏰ ❌ `%s`\n\n%s\n\nerror: exit code %d", cmdLabel, truncateStr(errMsg, 3000), cmd.ProcessState.ExitCode())
 		} else {
@@ -4936,7 +4935,7 @@ func (e *Engine) cmdShell(p Platform, msg *Message, raw string) {
 		workDir, _ = os.Getwd()
 	}
 
-	go e.runShellWithProgress(p, msg.ReplyCtx, shellCmd, workDir, timeout, 4000)
+	go func() { _ = e.runShellWithProgress(p, msg.ReplyCtx, shellCmd, workDir, timeout, 4000) }()
 }
 
 func (e *Engine) cmdDiff(p Platform, msg *Message, raw string) {
@@ -10396,7 +10395,7 @@ func (e *Engine) executeShellCommand(p Platform, msg *Message, cmd *CustomComman
 		workDir, _ = os.Getwd()
 	}
 
-	e.runShellWithProgress(p, msg.ReplyCtx, execCmd, workDir, 60*time.Second, 4000)
+	_ = e.runShellWithProgress(p, msg.ReplyCtx, execCmd, workDir, 60*time.Second, 4000)
 }
 
 func (e *Engine) cmdCommands(p Platform, msg *Message, args []string) {
