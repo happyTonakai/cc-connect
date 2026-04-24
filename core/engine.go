@@ -4700,6 +4700,7 @@ func (e *Engine) runShellWithProgress(p Platform, replyCtx any, command string, 
 	var mu sync.Mutex
 	var buf bytes.Buffer
 	doneCh := make(chan struct{})
+	var cmdWaitErr error
 
 	readPipe := func(r io.Reader) {
 		scanner := bufio.NewScanner(r)
@@ -4713,11 +4714,15 @@ func (e *Engine) runShellWithProgress(p Platform, replyCtx any, command string, 
 			mu.Unlock()
 		}
 	}
-	go readPipe(stdout)
-	go readPipe(stderr)
 
 	go func() {
-		cmd.Wait()
+		// Pipes must be fully drained before cmd.Wait() per Go API contract.
+		var pipeWg sync.WaitGroup
+		pipeWg.Add(2)
+		go func() { defer pipeWg.Done(); readPipe(stdout) }()
+		go func() { defer pipeWg.Done(); readPipe(stderr) }()
+		pipeWg.Wait()
+		cmdWaitErr = cmd.Wait()
 		close(doneCh)
 	}()
 
@@ -4725,7 +4730,7 @@ func (e *Engine) runShellWithProgress(p Platform, replyCtx any, command string, 
 	select {
 	case <-doneCh:
 		// Command finished within the quick window — send result directly
-		return e.finishShellCmd(p, replyCtx, cmd, &mu, &buf, cmdLabel, maxOutput, false)
+		return e.finishShellCmd(p, replyCtx, cmd, &mu, &buf, cmdLabel, maxOutput, false, cmdWaitErr)
 	case <-ctx.Done():
 		// Timeout before even the quick window elapsed (very short timeout)
 		killAndWait(cmd, doneCh)
@@ -4787,7 +4792,7 @@ func (e *Engine) runShellWithProgress(p Platform, replyCtx any, command string, 
 	select {
 	case <-doneCh:
 		close(updateDone)
-		return e.finishShellCmd(p, replyCtx, cmd, &mu, &buf, cmdLabel, maxOutput, useUpdate, previewHandle)
+		return e.finishShellCmd(p, replyCtx, cmd, &mu, &buf, cmdLabel, maxOutput, useUpdate, previewHandle, cmdWaitErr)
 	case <-ctx.Done():
 		close(updateDone)
 		killAndWait(cmd, doneCh)
@@ -4804,7 +4809,26 @@ func (e *Engine) runShellWithProgress(p Platform, replyCtx any, command string, 
 	}
 }
 
+func truncateRunes(s string, max int) string {
+	if max < 4 {
+		max = 4
+	}
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return string(runes[:max-3]) + "..."
+}
+
 func (e *Engine) finishShellCmd(p Platform, replyCtx any, cmd *exec.Cmd, mu *sync.Mutex, buf *bytes.Buffer, cmdLabel string, maxOutput int, opts ...any) error {
+	var waitErr error
+	// Extract waitErr from opts if provided as the last error argument.
+	for _, o := range opts {
+		if err, ok := o.(error); ok {
+			waitErr = err
+		}
+	}
+
 	mu.Lock()
 	output := buf.String()
 	mu.Unlock()
@@ -4816,14 +4840,17 @@ func (e *Engine) finishShellCmd(p Platform, replyCtx any, cmd *exec.Cmd, mu *syn
 	if display == "" && exitOK {
 		display = "(no output)"
 	}
-	if len(display) > maxOutput {
-		display = display[:maxOutput-3] + "..."
-	}
+	display = truncateRunes(display, maxOutput)
 
 	var finalMsg string
 	if exitOK {
 		finalMsg = fmt.Sprintf("✅ `%s`\n```\n%s\n```", cmdLabel, display)
 	} else {
+		// Prefer the wait error message when we have no captured output,
+		// since it often contains the actual failure reason.
+		if display == "" && waitErr != nil {
+			display = truncateRunes(waitErr.Error(), maxOutput)
+		}
 		finalMsg = fmt.Sprintf("❌ `%s` (exit code %d)\n```\n%s\n```", cmdLabel, exitCode, display)
 	}
 
@@ -4849,18 +4876,12 @@ func (e *Engine) finishShellCmd(p Platform, replyCtx any, cmd *exec.Cmd, mu *syn
 }
 
 func (e *Engine) formatShellProgress(cmdLabel, output string, maxOutput int) string {
-	display := output
-	if len(display) > maxOutput {
-		display = display[:maxOutput-3] + "..."
-	}
+	display := truncateRunes(output, maxOutput)
 	return fmt.Sprintf("⏳ `%s`\n```\n%s\n```", cmdLabel, display)
 }
 
 func (e *Engine) formatShellTimeout(cmdLabel, output string, maxOutput int) string {
-	display := output
-	if len(display) > maxOutput {
-		display = display[:maxOutput-3] + "..."
-	}
+	display := truncateRunes(output, maxOutput)
 	return fmt.Sprintf("⚠️ `%s` (timeout)\n```\n%s\n```", cmdLabel, display)
 }
 
